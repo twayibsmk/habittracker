@@ -903,54 +903,62 @@ const AICoachingPanel = ({ isOpen, onClose, habits }) => {
     setResponse("");
     setDisplayedText("");
 
-    const habitData = habits.map((h) => ({
-      name: h.name,
-      frequency: h.frequency,
-      streak: calculateStreak(h.completions, h.frequency),
-      totalCompletions: (h.completions || []).length,
-      recentCompletions: (h.completions || []).slice(-14),
-      completedToday: (h.completions || []).includes(todayStr()),
-    }));
-
-    const prompt = `You are an expert habit coach embedded in a space-themed habit tracking app called "Habits Station". The user has the following habits:
-
-${JSON.stringify(habitData, null, 2)}
-
-Today's date is: ${todayStr()}
-
-Give specific, actionable feedback in a motivating but direct tone. Use space metaphors naturally (not forced). Structure your response as:
-
-🛰️ **Mission Status** — Brief overall assessment
-🌟 **What's Working** — Celebrate wins and strong streaks
-⚠️ **Attention Needed** — Habits that are slipping with specific reasons
-🚀 **Next Steps** — 2-3 concrete, actionable recommendations for the next 48 hours
-
-Keep it concise (under 300 words). Be specific to their data — reference actual habit names and streaks.`;
+    // Simulate network delay for "AI" processing effect
+    await new Promise((resolve) => setTimeout(resolve, 800));
 
     try {
-      const res = await fetch(ANTHROPIC_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "anthropic-version": "2023-06-01",
-          // x-api-key is pre-injected — no key needed here
-        },
-        body: JSON.stringify({
-          model: ANTHROPIC_MODEL,
-          max_tokens: 1024,
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error(`API error: ${res.status}`);
+      const totalHabits = habits.length;
+      if (totalHabits === 0) {
+        setResponse("🛰️ **Mission Status** — Launch sequence pending.\n\n🌟 **What's Working** — Access terminal connected.\n\n⚠️ **Attention Needed** — No active habits detected.\n\n🚀 **Next Steps** \n1. Click + New Habit below.\n2. Initialize your first daily objective.");
+        return;
       }
 
-      const data = await res.json();
-      const text = data.content?.[0]?.text || "No response received.";
-      setResponse(text);
+      const activeToday = habits.filter(h => (h.completions || []).includes(todayStr()));
+      const completionRate = activeToday.length / totalHabits;
+      
+      let bestHabit = habits[0];
+      let maxStreak = 0;
+      habits.forEach(h => {
+        const s = calculateStreak(h.completions, h.frequency);
+        if (s >= maxStreak) {
+          maxStreak = s;
+          bestHabit = h;
+        }
+      });
+
+      const slipping = habits.filter(h => calculateStreak(h.completions, h.frequency) === 0 && (h.completions || []).length > 0);
+
+      let status = "Stabilizing orbit.";
+      if (completionRate === 1) status = "Optimal trajectory. All primary systems engaged.";
+      else if (completionRate >= 0.5) status = "Main thrusters active. Solid daily progress.";
+      else if (completionRate > 0) status = "Minimum velocity achieved. Recommend immediate boost.";
+      else status = "Drifting. No thruster activity detected today.";
+
+      let nextSteps = "1. Target your easiest uncompleted habit right now.\n2. Review if your frequencies are too demanding.";
+      if (completionRate === 1) nextSteps = "1. Rest and recharge. Mission accomplished for today.\n2. Prepare to maintain momentum on the next cycle.";
+
+      let responseText = `🛰️ **Mission Status** — ${status}\n\n`;
+      
+      if (maxStreak > 0) {
+        responseText += `🌟 **What's Working** — Your protocol for **${bestHabit.name}** is excelling with an ongoing ${maxStreak} streak!\n\n`;
+      } else {
+        responseText += `🌟 **What's Working** — Habit objectives are successfully logged in the database.\n\n`;
+      }
+
+      if (slipping.length > 0) {
+        const slippingNames = slipping.slice(0, 2).map(s => `**${s.name}**`).join(' and ');
+        responseText += `⚠️ **Attention Needed** — ${slippingNames} ${slipping.length > 2 ? 'and others' : ''} are showing lapsed signals. Recalibrate to avoid losing progress entirely.\n\n`;
+      } else if (completionRate < 1) {
+        responseText += `⚠️ **Attention Needed** — Prioritize remaining daily objectives to secure the sector.\n\n`;
+      } else {
+        responseText += `⚠️ **Attention Needed** — None. All systems operating at peak efficiency.\n\n`;
+      }
+
+      responseText += `🚀 **Next Steps** \n${nextSteps}`;
+
+      setResponse(responseText);
     } catch (err) {
-      setError(err.message || "Failed to contact AI. Please try again.");
+      setError("Failed to analyze data. Please try again.");
     } finally {
       setIsLoading(false);
     }
