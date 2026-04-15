@@ -53,7 +53,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ─── Anthropic Config ────────────────────────────────────────────────────────
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
-const ANTHROPIC_MODEL = "claude-opus-4-6-20251101";
+const ANTHROPIC_MODEL = "claude-3-5-sonnet-20241022";
 
 // ─── Date Helpers ────────────────────────────────────────────────────────────
 const todayStr = () => new Date().toISOString().split("T")[0];
@@ -762,6 +762,29 @@ const AddHabitForm = ({ onAdd, loading }) => {
         onBlur={(e) => { e.target.style.borderColor = "rgba(0,255,209,0.2)"; }}
       />
 
+      <div style={{ display: "flex", gap: "6px", marginBottom: "16px", flexWrap: "wrap" }}>
+        {["🌌", "💧", "🏃‍♂️", "📖", "🧘‍♀️", "🍎", "🚀", "💻", "🛸", "🧠", "🏋️"].map((e) => (
+          <button
+            key={e}
+            type="button"
+            onClick={() => setName((prev) => prev ? `${e} ${prev.replace(/^[\u1000-\uFFFF]+\s*/, '')}` : `${e} `)}
+            style={{
+              padding: "6px 8px",
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "14px",
+              transition: "all 0.2s ease"
+            }}
+            onMouseEnter={(ev) => { ev.currentTarget.style.background = "rgba(0,255,209,0.1)"; ev.currentTarget.style.borderColor = "rgba(0,255,209,0.3)"; }}
+            onMouseLeave={(ev) => { ev.currentTarget.style.background = "rgba(255,255,255,0.03)"; ev.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
+          >
+            {e}
+          </button>
+        ))}
+      </div>
+
       <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
         {["daily", "weekly"].map((f) => (
           <button
@@ -1001,7 +1024,7 @@ Keep it concise (under 300 words). Be specific to their data — reference actua
               AI MISSION BRIEFING
             </h2>
             <p style={{ fontSize: "11px", color: "var(--text-secondary)", margin: "4px 0 0", letterSpacing: "1px" }}>
-              POWERED BY CLAUDE OPUS
+              POWERED BY CLAUDE SONNET
             </p>
           </div>
           <button
