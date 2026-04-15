@@ -1393,10 +1393,13 @@ export default function HabitTracker() {
     if (session) loadHabits();
   }, [session, loadHabits]);
 
+  const [addHabitError, setAddHabitError] = useState(null);
+
   // ── CRUD Operations ──────────────────────────
   const createHabit = async ({ name, frequency }) => {
     if (!session?.user) return;
     setSavingHabit(true);
+    setAddHabitError(null);
     try {
       const { data, error } = await supabase
         .from("habits")
@@ -1412,6 +1415,13 @@ export default function HabitTracker() {
       setHabits((prev) => [...prev, data]);
     } catch (err) {
       console.error("Create habit error:", err);
+      let errorMsg = err.message || "Failed to create habit.";
+      if (err.code === "42P01") {
+        errorMsg = "Table 'habits' does not exist. Did you run the SQL script?";
+      } else if (err.code === "42501") {
+        errorMsg = "Permission denied (RLS). Check your table policies.";
+      }
+      setAddHabitError(errorMsg);
     } finally {
       setSavingHabit(false);
     }
@@ -1472,6 +1482,9 @@ export default function HabitTracker() {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
+        options: {
+          redirectTo: window.location.origin,
+        },
       });
       if (error) throw error;
     } catch (err) {
@@ -1753,6 +1766,20 @@ export default function HabitTracker() {
         {/* Add Habit */}
         <div style={{ maxWidth: "360px", margin: "0 auto" }}>
           <AddHabitForm onAdd={createHabit} loading={savingHabit} />
+          {addHabitError && (
+            <div style={{
+              marginTop: "16px",
+              padding: "16px",
+              borderRadius: "12px",
+              border: "1px solid rgba(255,77,106,0.3)",
+              background: "rgba(255,77,106,0.06)",
+              color: "#ff4d6a",
+              fontSize: "13px",
+              textAlign: "center",
+            }}>
+              ⚠️ {addHabitError}
+            </div>
+          )}
         </div>
       </div>
 
